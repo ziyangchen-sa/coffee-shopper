@@ -1,4 +1,4 @@
-# ☕ Specialty Coffee — Live Listings
+# ☕ Coffee Shopper — Live Listings
 
 A single-page web app that aggregates **currently in-stock** coffees from
 multiple specialty roasters and ranks every size option by **price per gram** —

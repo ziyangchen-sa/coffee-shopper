@@ -1,7 +1,7 @@
 {
-  "name": "Hydrangea Coffee — Live Listings",
-  "short_name": "Hydrangea",
-  "description": "Live $/gram comparison of Hydrangea Coffee Roasters' current single-origin lots.",
+  "name": "Coffee Shopper — Live Listings",
+  "short_name": "Coffee Shopper",
+  "description": "Live $/gram comparison of in-stock specialty coffees across roasters.",
   "start_url": ".",
   "scope": ".",
   "display": "standalone",
