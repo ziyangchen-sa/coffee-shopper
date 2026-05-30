@@ -1,6 +1,6 @@
 // Minimal service worker: cache the app shell so it installs + works offline,
 // but always go to the network first for the live product feed.
-const CACHE = 'coffee-shopper-v6';
+const CACHE = 'coffee-shopper-v7';
 const SHELL = [
   '.', 'index.html', 'manifest.webmanifest',
   'icons/icon-192.png', 'icons/icon-512.png', 'icons/apple-touch-icon.png', 'icons/favicon-32.png'

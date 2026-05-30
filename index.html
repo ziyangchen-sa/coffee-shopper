@@ -17,10 +17,13 @@
   :root { --ink:#222; --muted:#777; --line:#e6e3dd; --bg:#faf8f4; --accent:#7a5b8e; }
   * { box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
   body { margin:0; font:15px/1.45 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif; color:var(--ink); background:var(--bg); }
+  /* the whole block above the table stays pinned while scrolling */
+  #topbar { position:sticky; top:0; z-index:10; background:#fff; }
   header { padding:max(20px,env(safe-area-inset-top)) 24px 14px; border-bottom:1px solid var(--line); background:#fff; }
   h1 { margin:0 0 4px; font-size:21px; letter-spacing:.3px; }
   .sub { color:var(--muted); font-size:13px; }
-  .controls { padding:12px 24px; display:flex; gap:14px; align-items:center; flex-wrap:wrap; background:#fff; border-bottom:1px solid var(--line); position:sticky; top:0; z-index:5; }
+  .controls { padding:12px 24px; display:flex; gap:14px; align-items:center; flex-wrap:wrap; background:#fff; border-bottom:1px solid var(--line); }
+  .rowcount { font-weight:700; font-size:12.5px; color:var(--accent); background:#f0eaf5; padding:4px 10px; border-radius:20px; white-space:nowrap; }
   .controls label { font-size:13px; color:var(--muted); }
   .roasters { display:flex; gap:12px; align-items:center; flex-wrap:wrap; flex:1 1 100%; padding-top:2px; border-top:1px dashed var(--line); margin-top:2px; }
   .roasters > .lbl { font-size:12px; text-transform:uppercase; letter-spacing:.5px; color:#999; font-weight:600; }
@@ -38,7 +41,7 @@
   .wrap { padding:18px 24px 60px; }
   table { border-collapse:separate; border-spacing:0; width:100%; background:#fff; border-radius:10px; box-shadow:0 1px 3px rgba(0,0,0,.06); }
   th, td { padding:10px 12px; text-align:left; border-bottom:1px solid var(--line); vertical-align:middle; font-size:13.5px; }
-  th { background:#f3f0ea; font-size:12px; text-transform:uppercase; letter-spacing:.5px; color:#555; cursor:pointer; user-select:none; white-space:nowrap; position:sticky; top:var(--controls-h, 0px); z-index:3; }
+  th { background:#f3f0ea; font-size:12px; text-transform:uppercase; letter-spacing:.5px; color:#555; cursor:pointer; user-select:none; white-space:nowrap; position:sticky; top:var(--topbar-h, 0px); z-index:3; }
   /* round the table corners without overflow:hidden (which would break the sticky header) */
   thead th:first-child { border-top-left-radius:10px; }
   thead th:last-child { border-top-right-radius:10px; }
@@ -100,6 +103,7 @@
 </style>
 </head>
 <body>
+<div id="topbar">
 <header>
   <h1>☕ Coffee Shopper — Live Listings</h1>
   <div class="sub"><strong>$/g</strong> = price ÷ true coffee weight (lower is cheaper) — the comparable unit price <em>across roasters</em>. Tap <em>Refresh</em> to re-pull every catalog live.</div>
@@ -107,6 +111,7 @@
 <div class="controls">
   <button id="refresh">🔄 Refresh all roasters</button>
   <span id="status"></span>
+  <span id="rowcount" class="rowcount"></span>
   <span style="flex:1" class="spacer"></span>
   <span><label>Sort</label><br>
     <select id="sort">
@@ -124,6 +129,7 @@
   <span><label><input type="checkbox" id="hideRested"> Hide [Rested]/clearance</label></span>
   <div class="roasters" id="roasterFilters"><span class="lbl">Roasters</span></div>
 </div>
+</div><!-- /topbar -->
 <div class="wrap">
   <table id="t">
     <thead><tr>
@@ -323,6 +329,8 @@ function render(){
       <td class="col-pg15" data-label="Per 15g (≈1 cup)">${x.pg!=null?'$'+(x.pg*15).toFixed(2):'—'}</td>`;
     tbody.appendChild(tr);
   });
+  const rc=document.getElementById('rowcount');
+  if(rc) rc.textContent='Showing '+r.length+' of '+rows.length+' rows';
   return r.length;
 }
 
@@ -375,11 +383,11 @@ document.querySelectorAll('th').forEach(th=>th.addEventListener('click',()=>{
   const m=map[th.dataset.k]; if(m){document.getElementById('sort').value=m;render();}
 }));
 
-// Keep the sticky table header offset just below the variable-height controls bar
-const controlsEl=document.querySelector('.controls');
-function setControlsOffset(){ document.documentElement.style.setProperty('--controls-h',(controlsEl?controlsEl.offsetHeight:0)+'px'); }
-if(window.ResizeObserver){ new ResizeObserver(setControlsOffset).observe(controlsEl); } else { window.addEventListener('resize',setControlsOffset); }
-setControlsOffset();
+// Keep the sticky table header offset just below the (variable-height) pinned top bar
+const topbarEl=document.getElementById('topbar');
+function setTopbarOffset(){ document.documentElement.style.setProperty('--topbar-h',(topbarEl?topbarEl.offsetHeight:0)+'px'); }
+if(window.ResizeObserver){ new ResizeObserver(setTopbarOffset).observe(topbarEl); } else { window.addEventListener('resize',setTopbarOffset); }
+setTopbarOffset();
 
 rebuild(); render();
 setStatus(DATA.length?'Showing saved snapshot. Refreshing…':'Loading live…');
