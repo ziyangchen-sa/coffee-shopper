@@ -1,0 +1,264 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Hydrangea Coffee — Live Listings</title>
+<meta name="theme-color" content="#7a5b8e">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icons/icon-192.png">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="Hydrangea">
+<style>
+  :root { --ink:#222; --muted:#777; --line:#e6e3dd; --bg:#faf8f4; --accent:#7a5b8e; }
+  * { box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
+  body { margin:0; font:15px/1.45 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif; color:var(--ink); background:var(--bg); }
+  header { padding:max(20px,env(safe-area-inset-top)) 24px 14px; border-bottom:1px solid var(--line); background:#fff; }
+  h1 { margin:0 0 4px; font-size:21px; letter-spacing:.3px; }
+  .sub { color:var(--muted); font-size:13px; }
+  .controls { padding:12px 24px; display:flex; gap:14px; align-items:center; flex-wrap:wrap; background:#fff; border-bottom:1px solid var(--line); position:sticky; top:0; z-index:5; }
+  .controls label { font-size:13px; color:var(--muted); }
+  select, input[type=text] { font:inherit; padding:8px 10px; border:1px solid var(--line); border-radius:8px; background:#fff; }
+  button#refresh { font:inherit; font-weight:600; padding:9px 16px; border:0; border-radius:9px; background:var(--accent); color:#fff; cursor:pointer; display:inline-flex; align-items:center; justify-content:center; gap:7px; }
+  button#refresh:active { transform:scale(.98); }
+  button#refresh:disabled { opacity:.6; cursor:wait; }
+  #status { font-size:12px; color:var(--muted); }
+  #status.err { color:#b3261e; }
+  #status.ok { color:#1e7a3a; }
+  .spin { display:inline-block; width:13px; height:13px; border:2px solid #fff; border-top-color:transparent; border-radius:50%; animation:sp .7s linear infinite; }
+  @keyframes sp { to { transform:rotate(360deg); } }
+  .wrap { padding:18px 24px 60px; overflow-x:auto; }
+  table { border-collapse:collapse; width:100%; background:#fff; border-radius:10px; overflow:hidden; box-shadow:0 1px 3px rgba(0,0,0,.06); }
+  th, td { padding:10px 12px; text-align:left; border-bottom:1px solid var(--line); vertical-align:middle; font-size:13.5px; }
+  th { background:#f3f0ea; font-size:12px; text-transform:uppercase; letter-spacing:.5px; color:#555; cursor:pointer; user-select:none; white-space:nowrap; position:sticky; top:0; }
+  tbody tr:hover { background:#fcfbf8; }
+  img.thumb { width:52px; height:52px; object-fit:cover; border-radius:8px; border:1px solid var(--line); display:block; background:#f0ece4; }
+  .name { font-weight:600; }
+  .name a { color:inherit; text-decoration:none; border-bottom:1px dotted #bbb; }
+  .name a:hover { color:var(--accent); }
+  .tastes { color:var(--muted); font-size:12px; font-style:italic; }
+  .size { white-space:nowrap; }
+  .price { font-variant-numeric:tabular-nums; white-space:nowrap; }
+  .pg { font-variant-numeric:tabular-nums; font-weight:600; white-space:nowrap; border-radius:6px; padding:3px 8px; display:inline-block; }
+  .badge { font-size:11px; color:#a06b00; background:#fdf3df; padding:2px 6px; border-radius:5px; margin-left:6px; }
+  .rested { font-size:11px; color:#6a6a6a; background:#eee; padding:2px 6px; border-radius:5px; margin-left:6px; }
+  .grp-sep td { border-top:2px solid #ddd6cc; }
+  footer { padding:0 24px 40px; color:var(--muted); font-size:12px; }
+
+  /* ---------- Phone layout: each row becomes a card ---------- */
+  @media (max-width:760px) {
+    header { padding-top:max(18px,env(safe-area-inset-top)); padding-left:16px; padding-right:16px; }
+    h1 { font-size:19px; }
+    .controls { padding:10px 16px; gap:10px; }
+    button#refresh { flex:1 1 100%; padding:12px; font-size:15px; }
+    #status { flex:1 1 100%; order:6; }
+    .controls > span { flex:1 1 46%; }
+    .controls select, .controls input[type=text] { width:100%; }
+    .wrap { padding:12px 12px 50px; overflow-x:visible; }
+    footer { padding:0 16px 40px; }
+
+    thead { display:none; }
+    table, tbody { display:block; background:transparent; box-shadow:none; border-radius:0; }
+    tbody tr {
+      display:block; position:relative; background:#fff; border:1px solid var(--line);
+      border-radius:14px; padding:14px 14px 12px 86px; margin-bottom:14px;
+      box-shadow:0 1px 4px rgba(0,0,0,.07); min-height:86px;
+    }
+    tbody tr.grp-sep td { border-top:none; }
+    td { display:block; border:none; padding:2px 0; font-size:13px; }
+    td.col-pic { position:absolute; left:14px; top:14px; padding:0; }
+    td.col-pic img.thumb { width:58px; height:58px; }
+    td.col-name { font-size:15.5px; font-weight:600; margin-bottom:7px; padding-bottom:7px; border-bottom:1px solid var(--line); }
+    td.col-name .tastes { display:block; font-weight:400; margin-top:2px; }
+    td.col-variety, td.col-producer, td.col-origin, td.col-process { color:var(--muted); font-size:12.5px; }
+    td.col-variety::before, td.col-producer::before, td.col-origin::before,
+    td.col-process::before, td.col-size::before, td.col-price::before, td.col-grams::before {
+      content:attr(data-label) ": "; font-weight:600; color:#9a948c;
+    }
+    td.col-size { margin-top:9px; padding-top:9px; border-top:1px dashed var(--line); font-weight:600; color:var(--ink); }
+    td.col-pg { margin-top:7px; display:flex; align-items:center; gap:8px; }
+    td.col-pg::before { content:"Unit price"; font-weight:600; color:#9a948c; font-size:12.5px; }
+    td.col-pg .pg { font-size:16px; }
+  }
+</style>
+</head>
+<body>
+<header>
+  <h1>☕ Hydrangea Coffee — Live Listings</h1>
+  <div class="sub"><strong>$/g</strong> = price ÷ true coffee weight (lower is cheaper). Tap <em>Refresh</em> to re-pull the roaster's live catalog.</div>
+</header>
+<div class="controls">
+  <button id="refresh">🔄 Refresh from hydrangea.coffee</button>
+  <span id="status"></span>
+  <span style="flex:1" class="spacer"></span>
+  <span><label>Sort</label><br>
+    <select id="sort">
+      <option value="pg-asc">Cheapest $/g first</option>
+      <option value="pg-desc">Priciest $/g first</option>
+      <option value="price-asc">Lowest sticker price</option>
+      <option value="name-asc">Coffee name (A→Z)</option>
+      <option value="variety-asc">Varietal</option>
+    </select>
+  </span>
+  <span><label>Filter</label><br><input type="text" id="q" placeholder="varietal, farm, origin…"></span>
+  <span><label><input type="checkbox" id="hideRested"> Hide [Rested]/clearance</label></span>
+</div>
+<div class="wrap">
+  <table id="t">
+    <thead><tr>
+      <th data-k="image">Pic</th>
+      <th data-k="name">Coffee</th>
+      <th data-k="variety">Varietal</th>
+      <th data-k="producer">Producer / Farm</th>
+      <th data-k="origin">Origin</th>
+      <th data-k="process">Process</th>
+      <th data-k="size">Size</th>
+      <th data-k="price">Price</th>
+      <th data-k="grams">Weight</th>
+      <th data-k="pg">$/g (unit)</th>
+    </tr></thead>
+    <tbody></tbody>
+  </table>
+</div>
+<footer>
+  $/g uses actual roasted-coffee weight (e.g. 4&nbsp;oz = 114&nbsp;g), not Shopify's shipping weight which bakes in ~20&nbsp;g of packaging.
+  <span class="rested">Rested</span> lots are older roast dates sold at a discount. Live source: hydrangea.coffee/products.json (in-stock coffees only).
+</footer>
+<script>
+const FEED = 'https://hydrangea.coffee/products.json?limit=250';
+
+// ---- Parsing: products.json -> clean coffee list (single source of truth) ----
+function strip(h){ return (h||'').replace(/<[^>]*>/g,' ').replace(/&amp;/g,'&').replace(/&nbsp;/g,' ').replace(/\s+/g,' ').trim(); }
+function parseBody(html){
+  const out={};
+  const chunks=(html||'').split(/<\/p>|<br\s*\/?>/i).map(strip).filter(Boolean);
+  const labels={tastes:/^Tastes Like\s*:?/i, origin:/^Origin\s*:?/i, variety:/^(Variety|Varietal)\s*:?/i,
+    producer:/^(Producer|Farm|Farmer)\s*:?/i, elevation:/^(Elevation|Altitude)\s*:?/i, process:/^Process\s*:?/i};
+  for(const c of chunks) for(const [k,re] of Object.entries(labels)) if(re.test(c)&&!out[k]) out[k]=c.replace(re,'').trim();
+  return out;
+}
+function wtGrams(t){
+  let m;
+  if(m=t.match(/\((\d+)\s*g\)/i)) return parseInt(m[1]);
+  if(m=t.match(/([\d.]+)\s*lb/i)) return Math.round(parseFloat(m[1])*453.592);
+  if(m=t.match(/([\d.]+)\s*kg/i)) return Math.round(parseFloat(m[1])*1000);
+  if(m=t.match(/([\d.]+)\s*oz/i)) return Math.round(parseFloat(m[1])*28.3495);
+  if(m=t.match(/([\d.]+)\s*g/i)) return parseInt(m[1]);
+  return null;
+}
+function parseProducts(products){
+  return products
+    .filter(p => /coffee/i.test(p.product_type) && !(p.tags||[]).includes('archive'))
+    .filter(p => !/subscription/i.test(p.title))
+    .filter(p => p.variants.some(v=>v.available))
+    .map(p => {
+      const b=parseBody(p.body_html);
+      return {
+        name:p.title, url:'https://hydrangea.coffee/products/'+p.handle,
+        image:(p.images[0]||{}).src||'',
+        tastes:(b.tastes||'').replace(/\bM ango\b/g,'Mango'),
+        variety:b.variety||'', producer:b.producer||'', origin:b.origin||'', process:b.process||'',
+        variants:p.variants.filter(v=>v.available).map(v=>{
+          const g=wtGrams(v.title);
+          return {size:v.title, price:parseFloat(v.price), grams:g, perGram:g?+(parseFloat(v.price)/g).toFixed(4):null};
+        })
+      };
+    });
+}
+
+// ---- Initial snapshot (instant load + offline fallback). ----
+const SNAPSHOT = [{"name":"[Rested] Gesha - Wave Washed CF - Finca Soledad (Ultralight)","url":"https://hydrangea.coffee/products/rested-gesha-wave-washed-cf-finca-soledad-ultralight","image":"https://cdn.shopify.com/s/files/1/0693/6887/3282/files/image0.jpg?v=1778969889","tastes":"Mangosteen, Jasmine, Lulo","origin":"Finca Soledad, Imbabura, Ecuador","variety":"Gesha","producer":"Pepe Jijon","elevation":"1515 masl","process":"Wave Washed CF","region":"","variants":[{"size":"4oz (114g) - 05/24","price":38,"grams":114,"perGram":0.3333}]},{"name":"[Rested] Gesha - Wave Washed CF - Finca Soledad","url":"https://hydrangea.coffee/products/rested-gesha-wave-washed-cf-finca-soledad","image":"https://cdn.shopify.com/s/files/1/0693/6887/3282/files/Mangosteen_Jasmine_Lulo.jpg?v=1745846492","tastes":"Mangosteen, Jasmine, Lulo","origin":"Finca Soledad, Imbabura, Ecuador","variety":"Gesha","producer":"Pepe Jijon","elevation":"1515 masl","process":"Wave Washed CF","region":"","variants":[{"size":"4oz (114g) - 05/24","price":38,"grams":114,"perGram":0.3333}]},{"name":"[Rested] Castillo - Thermal Shock Decaf - Finca El Paraiso","url":"https://hydrangea.coffee/products/rested-castillo-thermal-shock-decaf-finca-el-paraiso","image":"https://cdn.shopify.com/s/files/1/0693/6887/3282/products/RasberriesPeachKeyLime.jpg?v=1680149091","tastes":"","origin":"El Paraiso, Cauca, Colombia","variety":"Castillo","producer":"Samuel Diego Bermudez","elevation":"1960 masl","process":"Decaffeinated Thermal Shock Washed","region":"","variants":[{"size":"8oz (227g) - 05/24","price":26,"grams":227,"perGram":0.1145}]},{"name":"[Rested] Gesha - Natural - Hacienda La Papaya","url":"https://hydrangea.coffee/products/rested-gesha-natural-hacienda-la-papaya","image":"https://cdn.shopify.com/s/files/1/0693/6887/3282/files/Mango_Wisteria_Raspberry.jpg?v=1777914785","tastes":"Mango, Raspberry, Wisteria","origin":"Hacienda La Papaya, Saraguro, Loja, Ecuador","variety":"Gesha","producer":"Juan Peña","elevation":"1,900-2,100 masl","process":"Natural","region":"","variants":[{"size":"4oz (114g) - 05/24","price":28,"grams":114,"perGram":0.2456}]},{"name":"[Rested] Gesha - Hybrid Washed -  Mikava Estates, Marsella","url":"https://hydrangea.coffee/products/rested-gesha-hybrid-washed-mikava-estates-marsella","image":"https://cdn.shopify.com/s/files/1/0693/6887/3282/files/Yellowflorals_Meyerlemon_Berries.jpg?v=1778949144","tastes":"Yellow Florals, Meyer Lemon, Mix Berries","origin":"Marsella, Risaralda, Colombia","variety":"Gesha","producer":"Paul and Kevin Doyle","elevation":"1,700 masl","process":"Hybrid Washed","region":"","variants":[{"size":"4oz (114g) - 05/24","price":45,"grams":114,"perGram":0.3947}]},{"name":"Gesha - Hybrid Washed -  Mikava Estates, Marsella (Ultralight)","url":"https://hydrangea.coffee/products/gesha-hybrid-washed-mikava-estates-marsella-ultralight","image":"https://cdn.shopify.com/s/files/1/0693/6887/3282/files/Yellowflorals_Meyerlemon_Berries.jpg?v=1778949144","tastes":"Yellow Florals, Meyer Lemon, Mix Berries","origin":"Marsella, Risaralda, Colombia","variety":"Gesha","producer":"Paul and Kevin Doyle","elevation":"1,700 masl","process":"Hybrid Washed","region":"","variants":[{"size":"4oz (114g)","price":45,"grams":114,"perGram":0.3947}]},{"name":"Java - Natural - Finca Potosi, Cafe Granja La Esperanza","url":"https://hydrangea.coffee/products/java-natural-cafe-granja-la-esperanza","image":"https://cdn.shopify.com/s/files/1/0693/6887/3282/files/Rum_MerlotGrapes_Pineapple.jpg?v=1779571534","tastes":"Pineapple, Merlot, Rum","origin":"Finca Potosi, Valle del Cauca, Colombia","variety":"Java","producer":"Rigoberto and Luis Eduardo Herrera","elevation":"1570-1850 masl","process":"Natural","region":"","variants":[{"size":"4oz (114g)","price":31,"grams":114,"perGram":0.2719},{"size":"8oz (227g)","price":47,"grams":227,"perGram":0.207},{"size":"2lbs (907g)","price":157,"grams":907,"perGram":0.1731}]},{"name":"Sudan Rume - Natural \"XO\" - Finca Las Margaritas, Cafe Granja La Esperanza","url":"https://hydrangea.coffee/products/sudan-rume-natural-xo-las-margaritas-cafe-granja-la-esperanza","image":"https://cdn.shopify.com/s/files/1/0693/6887/3282/files/Violet_Strawberry_Sangria.jpg?v=1779571390","tastes":"Violet, Strawberry, Sangria","origin":"Las Margaritas, Valle del Cauca, Colombia","variety":"Sudan Rume","producer":"Rigoberto and Luis Eduardo Herrera","elevation":"1, 570-1,850 MASL","process":"Natural \"XO\"","region":"","variants":[{"size":"4oz (114g)","price":74,"grams":114,"perGram":0.6491},{"size":"8oz (227g)","price":135,"grams":227,"perGram":0.5947},{"size":"2lbs (907g)","price":507,"grams":907,"perGram":0.559}]},{"name":"[Rested] Gesha - Letty Bermudez - Finca El Paraiso","url":"https://hydrangea.coffee/products/rested-gesha-letty-bermudez-finca-el-paraiso","image":"https://cdn.shopify.com/s/files/1/0693/6887/3282/products/JasmineMilkTea_WhitePeachBlueBG.png?v=1675618863","tastes":"White Peach, Jasmine Milk Tea, Dried Rose","origin":"El Paraiso, Cauca, Colombia","variety":"Gesha","producer":"Samuel Diego Bermudez","elevation":"1930 masl","process":"Double fermentation thermal shock","region":"","variants":[{"size":"4oz (114g) - 05/24","price":29,"grams":114,"perGram":0.2544}]},{"name":"[Rested] Maracaturra - Washed - Finca El Socorro","url":"https://hydrangea.coffee/products/rested-maracaturra-washed-finca-el-socorro-05-17","image":"https://cdn.shopify.com/s/files/1/0693/6887/3282/files/Nougat_Apple_ChamomileFlowers.jpg?v=1777717634","tastes":"Nougat, Apple, Chamomile","origin":"Finca El Socorro, Palencia, Guatemala","variety":"Maracaturra","producer":"Juan Diego de la Cerda","elevation":"1,798-1,890 masl","process":"Washed","region":"","variants":[{"size":"8oz (227g) - 5/24","price":23,"grams":227,"perGram":0.1013}]},{"name":"Gesha - Washed - Finca El Turpial","url":"https://hydrangea.coffee/products/gesha-washed-finca-el-turpial","image":"https://cdn.shopify.com/s/files/1/0693/6887/3282/files/Hibiscus_Lime_Nectarine_1.jpg?v=1778969387","tastes":"Hibiscus, Lime, Nectarine","origin":"Finca El Turpial, Nariño, Colombia","variety":"Gesha","producer":"Emerson Felipe Narvaez","elevation":"2,780 masl","process":"Washed","region":"","variants":[{"size":"4oz (114g)","price":24,"grams":114,"perGram":0.2105},{"size":"8oz (227g)","price":35,"grams":227,"perGram":0.1542},{"size":"2lbs (907g)","price":110,"grams":907,"perGram":0.1213}]},{"name":"[Rested] Gesha - Salma Bermudez - Finca El Paraiso","url":"https://hydrangea.coffee/products/rested-gesha-salma-bermudez-finca-el-paraiso","image":"https://cdn.shopify.com/s/files/1/0693/6887/3282/files/Mango_DulcedeLeches_Elderflower-PinkBG.jpg?v=1685980257","tastes":"Mango, Dulce de Leches, Elderflower","origin":"El Paraiso, Cauca, Colombia","variety":"Gesha","producer":"Samuel Diego Bermudez","elevation":"1930 masl","process":"Special Fermentation Washed","region":"","variants":[{"size":"4oz (114g) - 05/24","price":28,"grams":114,"perGram":0.2456}]},{"name":"Gesha - Semi Washed - Finca El Sendero","url":"https://hydrangea.coffee/products/gesha-semi-washed-finca-el-sendero","image":"https://cdn.shopify.com/s/files/1/0693/6887/3282/files/Peach_Mandarinquat_Rose.jpg?v=1778365371","tastes":"Rose, Peach, Mandarinquat","origin":"Finca El Sendero, Cauca, Colombia","variety":"Gesha","producer":"Eyder Erney Martinez Mosquera","elevation":"1800 Masl","process":"Semi Washed","region":"","variants":[{"size":"4oz (114g)","price":21,"grams":114,"perGram":0.1842},{"size":"8oz (227g)","price":32,"grams":227,"perGram":0.141}]},{"name":"Pink Bourbon - Washed - Finca Inmaculada, Fellow Farms Project","url":"https://hydrangea.coffee/products/pink-bourbon-washed-finca-inmaculada-fellow-farms-project","image":"https://cdn.shopify.com/s/files/1/0693/6887/3282/files/Hibiscus_Plum_Lime.jpg?v=1778365162","tastes":"Hibiscus, Plum, Lime","origin":"Finca Inmaculada, Valle del Cauca, Colombia","variety":"Pink Bourbon","producer":"The Hologuin Family","elevation":"1,500-1,700 masl","process":"Washed","region":"","variants":[{"size":"4oz (114g)","price":19,"grams":114,"perGram":0.1667},{"size":"8oz (227g)","price":25,"grams":227,"perGram":0.1101},{"size":"2lbs (907g)","price":80,"grams":907,"perGram":0.0882},{"size":"5lbs (2270g)","price":141,"grams":2270,"perGram":0.0621}]},{"name":"Maracaturra - Washed - Finca El Socorro","url":"https://hydrangea.coffee/products/maracaturra-washed-finca-el-socorro","image":"https://cdn.shopify.com/s/files/1/0693/6887/3282/files/Nougat_Apple_ChamomileFlowers.jpg?v=1777717634","tastes":"Nougat, Apple, Chamomile","origin":"Finca El Socorro, Palencia, Guatemala","variety":"Maracaturra","producer":"Juan Diego de la Cerda","elevation":"1,798-1,890 masl","process":"Washed","region":"","variants":[{"size":"4oz (114g)","price":18,"grams":114,"perGram":0.1579},{"size":"8oz (227g)","price":23,"grams":227,"perGram":0.1013},{"size":"2lbs (907g)","price":74,"grams":907,"perGram":0.0816},{"size":"5lbs (2270g)","price":125,"grams":2270,"perGram":0.0551}]},{"name":"[Rested] Gesha - Natural - Abu Coffee, GN‑3170","url":"https://hydrangea.coffee/products/gesha-natural-abu-coffee-gn-3170-copy","image":"https://cdn.shopify.com/s/files/1/0693/6887/3282/files/Rose_Nectarine_Pineapple.jpg?v=1763852250","tastes":"Rose, Nectarine, Pineapple","origin":"Cañas Verdes, Boquete, Chiriquí","variety":"Gesha","producer":"José Luttrell","elevation":"1,550 masl","process":"Natural Double Phase Anaerobic + Geisha Mosto","region":"","variants":[{"size":"[Sale] 4oz (114g) - 04/26","price":42.4,"grams":114,"perGram":0.3719}]},{"name":"Sudan Rume - Natural - Finca Las Margaritas, Cafe Granja La Esperanza","url":"https://hydrangea.coffee/products/sudan-rume-natural-cafe-granja-la-esperanza","image":"https://cdn.shopify.com/s/files/1/0693/6887/3282/files/Cherry_BergamontFlowers_Papaya.jpg?v=1755318885","tastes":"Cherry, Bergamot Flowers, Papaya","origin":"Finca Las Margaritas, Cauca, Colombia","variety":"Sudan Rume","producer":"Rigoberto and Luis Eduardo Herrera","elevation":"1570-1850 masl","process":"Natural","region":"","variants":[{"size":"4oz (114g)","price":40,"grams":114,"perGram":0.3509},{"size":"8oz (227g)","price":66,"grams":227,"perGram":0.2907}]}];
+
+let DATA = SNAPSHOT;
+let rows = [], minPg=0, maxPg=1;
+function rebuild(){
+  rows=[];
+  DATA.forEach(c=>c.variants.forEach(v=>rows.push({
+    image:c.image, name:c.name, url:c.url, tastes:c.tastes, variety:c.variety,
+    producer:c.producer, origin:c.origin, process:c.process,
+    rested:/Rested/i.test(c.name), sale:/sale/i.test(v.size),
+    size:v.size, price:v.price, grams:v.grams, pg:v.perGram, key:c.name
+  })));
+  const pgs=rows.map(r=>r.pg).filter(x=>x!=null);
+  minPg=Math.min(...pgs); maxPg=Math.max(...pgs);
+}
+function pgColor(pg){ if(pg==null) return '#f3f0ea'; const t=(pg-minPg)/(maxPg-minPg||1); return `hsl(${120-110*t} 65% 88%)`; }
+const fmt=n=>'$'+n.toFixed(2);
+const tbody=document.querySelector('#t tbody');
+function render(){
+  const sort=document.getElementById('sort').value;
+  const hideR=document.getElementById('hideRested').checked;
+  const q=document.getElementById('q').value.trim().toLowerCase();
+  let r=rows.slice();
+  if(hideR) r=r.filter(x=>!x.rested);
+  if(q) r=r.filter(x=>(x.name+x.variety+x.producer+x.origin+x.process+x.tastes).toLowerCase().includes(q));
+  const [k,dir]=sort.split('-'); const s=dir==='desc'?-1:1;
+  r.sort((a,b)=>{ let av=a[k],bv=b[k];
+    if(typeof av==='string'){av=av.toLowerCase();bv=bv.toLowerCase();return av<bv?-s:av>bv?s:0;}
+    return ((av??1e9)-(bv??1e9))*s; });
+  tbody.innerHTML=''; let last=null;
+  r.forEach(x=>{
+    const tr=document.createElement('tr');
+    if(x.key!==last && (k==='name'||k==='variety')) tr.className='grp-sep'; last=x.key;
+    tr.innerHTML=`
+      <td class="col-pic"><img class="thumb" loading="lazy" src="${x.image}" alt=""></td>
+      <td class="col-name name" data-label="Coffee"><a href="${x.url}" target="_blank" rel="noopener">${x.name}</a>${x.rested?'<span class="rested">Rested</span>':''}${x.sale?'<span class="badge">Sale</span>':''}<div class="tastes">${x.tastes||''}</div></td>
+      <td class="col-variety" data-label="Varietal">${x.variety||'—'}</td>
+      <td class="col-producer" data-label="Producer / Farm">${x.producer||'—'}</td>
+      <td class="col-origin" data-label="Origin">${x.origin||'—'}</td>
+      <td class="col-process" data-label="Process">${x.process||'—'}</td>
+      <td class="col-size size" data-label="Size">${x.size}</td>
+      <td class="col-price price" data-label="Price">${fmt(x.price)}</td>
+      <td class="col-grams price" data-label="Weight">${x.grams?x.grams+' g':'—'}</td>
+      <td class="col-pg" data-label="Unit price"><span class="pg" style="background:${pgColor(x.pg)}">${x.pg!=null?'$'+x.pg.toFixed(3):'—'}</span></td>`;
+    tbody.appendChild(tr);
+  });
+  return r.length;
+}
+
+// ---- Refresh: re-pull live catalog and regenerate ----
+const statusEl=document.getElementById('status');
+function setStatus(msg,cls){ statusEl.textContent=msg; statusEl.className=cls||''; }
+async function refresh(){
+  const btn=document.getElementById('refresh');
+  btn.disabled=true; btn.innerHTML='<span class="spin"></span> Pulling live data…';
+  setStatus('Fetching hydrangea.coffee…');
+  try{
+    const res=await fetch(FEED,{cache:'no-store'});
+    if(!res.ok) throw new Error('HTTP '+res.status);
+    const data=await res.json();
+    const coffees=parseProducts(data.products);
+    if(!coffees.length) throw new Error('no in-stock coffees parsed');
+    DATA=coffees; rebuild();
+    const n=render();
+    setStatus('✓ Live — '+coffees.length+' coffees / '+n+' sizes · '+new Date().toLocaleString(),'ok');
+  }catch(e){
+    setStatus('⚠ Could not refresh ('+e.message+'). Showing last saved snapshot.','err');
+  }finally{
+    btn.disabled=false; btn.innerHTML='🔄 Refresh from hydrangea.coffee';
+  }
+}
+
+// wiring
+document.getElementById('refresh').addEventListener('click',refresh);
+document.getElementById('sort').addEventListener('change',render);
+document.getElementById('hideRested').addEventListener('change',render);
+document.getElementById('q').addEventListener('input',render);
+document.querySelectorAll('th').forEach(th=>th.addEventListener('click',()=>{
+  const map={name:'name-asc',variety:'variety-asc',producer:'name-asc',origin:'name-asc',process:'name-asc',size:'name-asc',price:'price-asc',grams:'pg-asc',pg:'pg-asc'};
+  const m=map[th.dataset.k]; if(m){document.getElementById('sort').value=m;render();}
+}));
+
+// initial paint from snapshot, then auto-pull live
+rebuild(); render();
+setStatus('Showing saved snapshot. Refreshing…');
+refresh();
+
+// PWA service worker
+if('serviceWorker' in navigator){ navigator.serviceWorker.register('sw.js').catch(()=>{}); }
+</script>
+</body>
+</html>
