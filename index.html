@@ -24,6 +24,7 @@
   .sub { color:var(--muted); font-size:13px; }
   .controls { padding:12px 24px; display:flex; gap:14px; align-items:center; flex-wrap:wrap; background:#fff; border-bottom:1px solid var(--line); }
   .rowcount { font-weight:700; font-size:12.5px; color:var(--accent); background:#f0eaf5; padding:4px 10px; border-radius:20px; white-space:nowrap; }
+  .sizenote { color:var(--muted); font-weight:400; font-size:11px; }
   .controls label { font-size:13px; color:var(--muted); }
   .roasters { display:flex; gap:12px; align-items:center; flex-wrap:wrap; flex:1 1 100%; padding-top:2px; border-top:1px dashed var(--line); margin-top:2px; }
   .roasters > .lbl { font-size:12px; text-transform:uppercase; letter-spacing:.5px; color:#999; font-weight:600; }
@@ -127,6 +128,7 @@
   <span><label><input type="checkbox" id="geishaOnly"> Geisha only</label></span>
   <span><label><input type="checkbox" id="washedOnly"> Washed only</label></span>
   <span><label><input type="checkbox" id="hideRested"> Hide [Rested]/clearance</label></span>
+  <span><label><input type="checkbox" id="perCoffee"> One row per coffee</label></span>
   <div class="roasters" id="roasterFilters"><span class="lbl">Roasters</span></div>
 </div>
 </div><!-- /topbar -->
@@ -320,6 +322,16 @@ function render(){
   // Washed: process field for Hydrangea; keyword-in-text for the others
   if(washedOnly) r=r.filter(x=> x.roasterId==='hydrangea' ? /washed/i.test(x.process) : /washed/i.test(x.text));
   if(q) r=r.filter(x=>(x.name+x.variety+x.producer+x.origin+x.process+x.tastes+x.roaster).toLowerCase().includes(q));
+  // "One row per coffee": collapse each coffee's sizes to a single representative row —
+  // the smallest bag (highest $/g). Track how many sizes each coffee has, for a hint.
+  const perCoffee=document.getElementById('perCoffee').checked;
+  let sizeCounts={};
+  if(perCoffee){
+    r.forEach(x=>{ sizeCounts[x.key]=(sizeCounts[x.key]||0)+1; });
+    const groups=new Map();
+    for(const x of r){ const g=groups.get(x.key); const a=x.pg==null?-1:x.pg; if(!g || a>(g.pg==null?-1:g.pg)) groups.set(x.key,x); }
+    r=[...groups.values()];
+  }
   const [k,dir]=sort.split('-'); const s=dir==='desc'?-1:1;
   r.sort((a,b)=>{ let av=a[k],bv=b[k];
     if(typeof av==='string'){av=av.toLowerCase();bv=bv.toLowerCase();return av<bv?-s:av>bv?s:0;}
@@ -334,7 +346,7 @@ function render(){
       <td class="col-producer" data-label="Producer / Farm">${x.producer||'—'}</td>
       <td class="col-origin" data-label="Origin">${x.origin||'—'}</td>
       <td class="col-process" data-label="Process">${x.process||'—'}</td>
-      <td class="col-size size" data-label="Size">${x.size}</td>
+      <td class="col-size size" data-label="Size">${x.size}${perCoffee && sizeCounts[x.key]>1 ? ` <span class="sizenote">· ${sizeCounts[x.key]} sizes</span>`:''}</td>
       <td class="col-price price" data-label="Price">${fmt(x.price)}</td>
       <td class="col-grams price" data-label="Weight">${x.grams?x.grams+' g':'—'}</td>
       <td class="col-pg" data-label="Unit price"><span class="pg" style="background:${pgColor(x.pg)}">${x.pg!=null?'$'+x.pg.toFixed(3):'—'}</span></td>
@@ -342,7 +354,8 @@ function render(){
     tbody.appendChild(tr);
   });
   const rc=document.getElementById('rowcount');
-  if(rc) rc.textContent='Showing '+r.length+' of '+rows.length+' rows';
+  if(rc){ const total=perCoffee?new Set(rows.map(x=>x.key)).size:rows.length;
+    rc.textContent='Showing '+r.length+' of '+total+(perCoffee?' coffees':' rows'); }
   return r.length;
 }
 
@@ -389,6 +402,7 @@ document.getElementById('sort').addEventListener('change',render);
 document.getElementById('hideRested').addEventListener('change',render);
 document.getElementById('geishaOnly').addEventListener('change',render);
 document.getElementById('washedOnly').addEventListener('change',render);
+document.getElementById('perCoffee').addEventListener('change',render);
 document.getElementById('q').addEventListener('input',render);
 document.querySelectorAll('th').forEach(th=>th.addEventListener('click',()=>{
   const map={name:'name-asc',variety:'variety-asc',producer:'name-asc',origin:'name-asc',process:'name-asc',size:'name-asc',price:'price-asc',grams:'pg-asc',pg:'pg-asc',pg15:'pg-asc',image:'roaster-asc'};
