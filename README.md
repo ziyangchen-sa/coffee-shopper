@@ -1,19 +1,37 @@
-# ☕ Hydrangea Coffee — Live Listings
+# ☕ Specialty Coffee — Live Listings
 
-A single-page web app that shows every **currently in-stock** coffee from
-[Hydrangea Coffee Roasters](https://hydrangea.coffee), with each size option's
-**price per gram** — the comparable unit price for deciding what to buy.
+A single-page web app that aggregates **currently in-stock** coffees from
+multiple specialty roasters and ranks every size option by **price per gram** —
+the comparable unit price for deciding what to buy, *across roasters*.
 
-- **Live data.** Pulls the roaster's public Shopify catalog
-  (`hydrangea.coffee/products.json`) directly in the browser. Hit **Refresh** to
-  re-pull anytime; sold-out lots drop off and new ones appear automatically.
-- **Honest $/g.** Unit price is computed from the *actual roasted-coffee weight*
-  (e.g. 4 oz = 114 g), not Shopify's shipping weight (which includes ~20 g of
-  packaging).
-- **Installable.** It's a PWA — open it on a phone and "Add to Home Screen" for a
-  real app icon that opens fullscreen.
-- **No backend.** Just static files (`index.html`, `manifest.webmanifest`,
-  `sw.js`, `icons/`). Works offline from the last cached pull.
+**Roasters:**
+- [Hydrangea Coffee Roasters](https://hydrangea.coffee)
+- [Sey Coffee](https://seycoffee.com)
+- [Black & White Roasters](https://www.blackwhiteroasters.com)
 
-Pulls in-stock products of type `Coffee` / `Rested Coffee`, parses varietal /
-farm / origin / process from each product description, and ranks by $/g.
+## Features
+- **Live data, no backend.** Pulls each roaster's public Shopify catalog
+  (`/products.json`, paginated) directly in the browser. Hit **Refresh** to
+  re-pull; sold-out lots drop off and new ones appear. Fetches run in parallel
+  and degrade gracefully if one roaster's site is unreachable.
+- **Honest $/g.** Unit price uses the *actual roasted-coffee weight* (e.g.
+  4 oz = 114 g, 250 g, 2 lb), not Shopify's shipping weight (which adds packaging).
+- **Per-roaster filters** + colored badge on every listing, plus **Geisha-only**
+  and **Washed-only** quick filters, text search, and sort.
+- **Installable PWA.** "Add to Home Screen" gives a real app icon, fullscreen,
+  works offline from the last cached pull.
+
+## Data-quality note
+Only **Hydrangea** publishes a structured varietal/origin/process. For **Sey**
+and **Black & White**, those fields are parsed best-effort from the product
+title and description (so some cells read "—"). Accordingly:
+- **Washed-only** matches "washed" in the listing text for all roasters.
+- **Geisha-only** uses Hydrangea's exact varietal field, and falls back to a
+  "Gesha/Geisha" keyword match in the title/description for the others.
+- **$/g, name, photo, sizes, prices** are reliable for all roasters — that's the
+  core comparison.
+
+## Adding another roaster
+If it's a Shopify store (most specialty roasters are) with open CORS on
+`/products.json`, add an entry to the `SOURCES` array in `index.html` and write
+a small `parse*()` adapter that maps its products to the normalized record shape.

@@ -1,6 +1,6 @@
 // Minimal service worker: cache the app shell so it installs + works offline,
 // but always go to the network first for the live product feed.
-const CACHE = 'hydrangea-v2';
+const CACHE = 'hydrangea-v3';
 const SHELL = [
   '.', 'index.html', 'manifest.webmanifest',
   'icons/icon-192.png', 'icons/icon-512.png', 'icons/apple-touch-icon.png'
