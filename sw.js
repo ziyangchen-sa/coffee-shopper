@@ -1,8 +1,8 @@
 // Minimal service worker: cache the app shell so it installs + works offline,
 // but always go to the network first for the live product feed.
-const CACHE = 'coffee-shopper-v13';
+const CACHE = 'coffee-shopper-v14';
 const SHELL = [
-  '.', 'index.html', 'manifest.webmanifest',
+  '.', 'index.html', 'manifest.webmanifest', 'bw-notes.json',
   'icons/icon-192.png', 'icons/icon-512.png', 'icons/apple-touch-icon.png', 'icons/favicon-32.png'
 ];
 
@@ -28,7 +28,8 @@ self.addEventListener('fetch', e => {
   const isHTML = e.request.mode === 'navigate' ||
     url.origin === location.origin && (url.pathname === '/' || url.pathname.endsWith('/') || url.pathname.endsWith('index.html'));
   const isFeed = url.hostname === 'hydrangea.coffee' && url.pathname.endsWith('products.json');
-  if (isHTML || isFeed) {
+  const isNotes = url.origin === location.origin && url.pathname.endsWith('bw-notes.json');
+  if (isHTML || isFeed || isNotes) {
     e.respondWith(
       fetch(e.request).then(res => {
         const copy = res.clone();

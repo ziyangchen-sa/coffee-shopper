@@ -31,6 +31,20 @@ title and description (so some cells read "—"). Accordingly:
 - **$/g, name, photo, sizes, prices** are reliable for all roasters — that's the
   core comparison.
 
+## Tasting notes
+- **Hydrangea / Sey**: parsed from text (Hydrangea's notes field; Sey's
+  "In the cup we find …" sentence).
+- **Black & White**: a few coffees expose a `NOTES |` field in the description,
+  but most only render the notes onto the product **card image**. So those are
+  OCR'd from the images into `bw-notes.json`, which the app reads at runtime.
+  - `tools/ocr_bw_notes.py` downloads each B&W card, contrast-flattens it
+    (the cards are dark text on coloured gradients), runs Tesseract, and writes
+    `bw-notes.json`.
+  - The **"Refresh B&W tasting notes (OCR)"** GitHub Action re-runs it weekly
+    (and on demand) and commits any changes — so new B&W coffees get notes
+    automatically, without a manual step. The Refresh button itself does not OCR
+    (too heavy for the browser); it just reads the latest `bw-notes.json`.
+
 ## Adding another roaster
 If it's a Shopify store (most specialty roasters are) with open CORS on
 `/products.json`, add an entry to the `SOURCES` array in `index.html` and write
