@@ -104,6 +104,8 @@
     </select>
   </span>
   <span><label>Filter</label><br><input type="text" id="q" placeholder="varietal, farm, origin…"></span>
+  <span><label><input type="checkbox" id="geishaOnly"> Geisha only</label></span>
+  <span><label><input type="checkbox" id="washedOnly"> Washed only</label></span>
   <span><label><input type="checkbox" id="hideRested"> Hide [Rested]/clearance</label></span>
 </div>
 <div class="wrap">
@@ -191,9 +193,13 @@ const tbody=document.querySelector('#t tbody');
 function render(){
   const sort=document.getElementById('sort').value;
   const hideR=document.getElementById('hideRested').checked;
+  const geishaOnly=document.getElementById('geishaOnly').checked;
+  const washedOnly=document.getElementById('washedOnly').checked;
   const q=document.getElementById('q').value.trim().toLowerCase();
   let r=rows.slice();
   if(hideR) r=r.filter(x=>!x.rested);
+  if(geishaOnly) r=r.filter(x=>/ge[is]+ha/i.test(x.variety));   // matches "Gesha" and "Geisha"
+  if(washedOnly) r=r.filter(x=>/washed/i.test(x.process));      // "washed" anywhere in the process
   if(q) r=r.filter(x=>(x.name+x.variety+x.producer+x.origin+x.process+x.tastes).toLowerCase().includes(q));
   const [k,dir]=sort.split('-'); const s=dir==='desc'?-1:1;
   r.sort((a,b)=>{ let av=a[k],bv=b[k];
@@ -246,6 +252,8 @@ async function refresh(){
 document.getElementById('refresh').addEventListener('click',refresh);
 document.getElementById('sort').addEventListener('change',render);
 document.getElementById('hideRested').addEventListener('change',render);
+document.getElementById('geishaOnly').addEventListener('change',render);
+document.getElementById('washedOnly').addEventListener('change',render);
 document.getElementById('q').addEventListener('input',render);
 document.querySelectorAll('th').forEach(th=>th.addEventListener('click',()=>{
   const map={name:'name-asc',variety:'variety-asc',producer:'name-asc',origin:'name-asc',process:'name-asc',size:'name-asc',price:'price-asc',grams:'pg-asc',pg:'pg-asc'};
