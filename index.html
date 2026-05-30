@@ -22,14 +22,29 @@
   header { padding:max(20px,env(safe-area-inset-top)) 24px 14px; border-bottom:1px solid var(--line); background:#fff; }
   h1 { margin:0 0 4px; font-size:21px; letter-spacing:.3px; }
   .sub { color:var(--muted); font-size:13px; }
-  .controls { padding:12px 24px; display:flex; gap:14px; align-items:center; flex-wrap:wrap; background:#fff; border-bottom:1px solid var(--line); }
+  .controls { padding:12px 24px; display:flex; flex-direction:column; gap:10px; background:#fff; border-bottom:1px solid var(--line); }
+  .row1 { display:flex; gap:12px; align-items:center; flex-wrap:wrap; }
+  .row2 { display:flex; gap:8px; align-items:center; flex-wrap:wrap; }
+  .spacer { flex:1; }
   .rowcount { font-weight:700; font-size:12.5px; color:var(--accent); background:#f0eaf5; padding:4px 10px; border-radius:20px; white-space:nowrap; }
   .sizenote { color:var(--muted); font-weight:400; font-size:11px; }
-  .controls label { font-size:13px; color:var(--muted); }
-  .roasters { display:flex; gap:12px; align-items:center; flex-wrap:wrap; flex:1 1 100%; padding-top:2px; border-top:1px dashed var(--line); margin-top:2px; }
-  .roasters > .lbl { font-size:12px; text-transform:uppercase; letter-spacing:.5px; color:#999; font-weight:600; }
-  .roasters label { display:inline-flex; align-items:center; gap:6px; font-size:13px; color:var(--ink); }
-  .rdot { width:10px; height:10px; border-radius:50%; display:inline-block; }
+  /* rounded search box */
+  .search { flex:0 1 290px; min-width:170px; font:inherit; padding:9px 14px; border:1px solid var(--line); border-radius:22px; background:#fff; }
+  .search:focus { outline:none; border-color:var(--accent); box-shadow:0 0 0 3px rgba(122,91,142,.15); }
+  /* pill toggles for the boolean filters */
+  .toggle { display:inline-flex; align-items:center; gap:6px; font-size:13px; padding:6px 13px; border:1px solid var(--line); border-radius:20px; cursor:pointer; user-select:none; background:#fff; color:#555; transition:background .12s,color .12s,border-color .12s; }
+  .toggle:hover { border-color:#c9c1d4; }
+  .toggle input { display:none; }
+  .toggle:has(input:checked) { background:var(--accent); color:#fff; border-color:var(--accent); }
+  .vsep { width:1px; height:24px; background:var(--line); margin:0 4px; }
+  /* roaster pills keep their colour identity; dim + strike when off */
+  .roasters { display:inline-flex; gap:8px; align-items:center; flex-wrap:wrap; }
+  .roasters > .lbl { font-size:11px; text-transform:uppercase; letter-spacing:.5px; color:#aaa; font-weight:700; margin-right:2px; }
+  .rtoggle { display:inline-flex; align-items:center; gap:7px; font-size:13px; padding:6px 12px; border:1px solid var(--line); border-radius:20px; cursor:pointer; user-select:none; background:#fff; color:var(--ink); transition:opacity .12s; }
+  .rtoggle input { display:none; }
+  .rdot { width:9px; height:9px; border-radius:50%; display:inline-block; }
+  .rtoggle:not(:has(input:checked)) { opacity:.4; text-decoration:line-through; }
+  .mobileSort { display:none; font-size:13px; color:var(--muted); align-items:center; gap:6px; }
   select, input[type=text] { font:inherit; padding:8px 10px; border:1px solid var(--line); border-radius:8px; background:#fff; }
   button#refresh { font:inherit; font-weight:600; padding:9px 16px; border:0; border-radius:9px; background:var(--accent); color:#fff; cursor:pointer; display:inline-flex; align-items:center; justify-content:center; gap:7px; }
   button#refresh:active { transform:scale(.98); }
@@ -43,6 +58,10 @@
   table { border-collapse:separate; border-spacing:0; width:100%; background:#fff; border-radius:10px; box-shadow:0 1px 3px rgba(0,0,0,.06); }
   th, td { padding:10px 12px; text-align:left; border-bottom:1px solid var(--line); vertical-align:middle; font-size:13.5px; }
   th { background:#f3f0ea; font-size:12px; text-transform:uppercase; letter-spacing:.5px; color:#555; cursor:pointer; user-select:none; white-space:nowrap; position:sticky; top:var(--topbar-h, 0px); z-index:3; }
+  th:hover { background:#ece6dc; color:#333; }
+  th.sorted { color:var(--accent); background:#efe9f4; }
+  th.sorted::after { content:"▲"; font-size:8px; margin-left:5px; vertical-align:middle; }
+  th.sorted.desc::after { content:"▼"; }
   /* round the table corners without overflow:hidden (which would break the sticky header) */
   thead th:first-child { border-top-left-radius:10px; }
   thead th:last-child { border-top-right-radius:10px; }
@@ -69,10 +88,11 @@
     h1 { font-size:19px; }
     .controls { padding:10px 16px; gap:10px; }
     button#refresh { flex:1 1 100%; padding:12px; font-size:15px; }
-    #status { flex:1 1 100%; order:6; }
-    .controls > span { flex:1 1 46%; }
-    .controls select, .controls input[type=text] { width:100%; }
-    .roasters { order:7; }
+    #status { flex:1 1 100%; }
+    .search { flex:1 1 100%; }
+    .mobileSort { display:inline-flex; flex:1 1 100%; }   /* no clickable headers on mobile cards, so keep a sort control here */
+    .mobileSort select { flex:1; }
+    .row2 { gap:7px; }
     .wrap { padding:12px 12px 50px; overflow-x:visible; }
     footer { padding:0 16px 40px; }
 
@@ -110,26 +130,35 @@
   <div class="sub"><strong>$/g</strong> = price ÷ true coffee weight (lower is cheaper) — the comparable unit price <em>across roasters</em>. Tap <em>Refresh</em> to re-pull every catalog live.</div>
 </header>
 <div class="controls">
-  <button id="refresh">🔄 Refresh all roasters</button>
-  <span id="status"></span>
-  <span id="rowcount" class="rowcount"></span>
-  <span style="flex:1" class="spacer"></span>
-  <span><label>Sort</label><br>
-    <select id="sort">
-      <option value="pg-asc">Cheapest $/g first</option>
-      <option value="pg-desc">Priciest $/g first</option>
-      <option value="price-asc">Lowest sticker price</option>
-      <option value="name-asc">Coffee name (A→Z)</option>
-      <option value="roaster-asc">Roaster</option>
-      <option value="variety-asc">Varietal</option>
-    </select>
-  </span>
-  <span><label>Filter</label><br><input type="text" id="q" placeholder="name, farm, origin…"></span>
-  <span><label><input type="checkbox" id="geishaOnly"> Geisha only</label></span>
-  <span><label><input type="checkbox" id="washedOnly"> Washed only</label></span>
-  <span><label><input type="checkbox" id="hideRested"> Hide [Rested]/clearance</label></span>
-  <span><label><input type="checkbox" id="perCoffee"> One row per coffee</label></span>
-  <div class="roasters" id="roasterFilters"><span class="lbl">Roasters</span></div>
+  <div class="row1">
+    <button id="refresh">🔄 Refresh all roasters</button>
+    <span id="status"></span>
+    <span id="rowcount" class="rowcount"></span>
+    <span class="spacer"></span>
+    <span class="mobileSort">Sort
+      <select id="sort">
+        <option value="pg|asc">Cheapest $/g</option>
+        <option value="pg|desc">Priciest $/g</option>
+        <option value="pg15|asc">Cheapest per cup</option>
+        <option value="price|asc">Lowest price</option>
+        <option value="price|desc">Highest price</option>
+        <option value="size|asc">Smallest size</option>
+        <option value="size|desc">Largest size</option>
+        <option value="name|asc">Name A–Z</option>
+        <option value="roaster|asc">Roaster</option>
+        <option value="variety|asc">Varietal</option>
+      </select>
+    </span>
+    <input type="text" id="q" class="search" placeholder="🔍  Search name, farm, origin…">
+  </div>
+  <div class="row2">
+    <label class="toggle"><input type="checkbox" id="geishaOnly"> Geisha</label>
+    <label class="toggle"><input type="checkbox" id="washedOnly"> Washed</label>
+    <label class="toggle"><input type="checkbox" id="hideRested"> Hide rested</label>
+    <label class="toggle"><input type="checkbox" id="perCoffee"> One row per coffee</label>
+    <span class="vsep"></span>
+    <div class="roasters" id="roasterFilters"><span class="lbl">Roasters</span></div>
+  </div>
 </div>
 </div><!-- /topbar -->
 <div class="wrap">
@@ -300,6 +329,7 @@ function buildRoasterFilters(){
   SOURCES.filter(s=>present.includes(s.id)).forEach(s=>{
     if(existing.has(s.id)) return;
     const lab=document.createElement('label');
+    lab.className='rtoggle';
     lab.innerHTML=`<input type="checkbox" value="${s.id}" checked><span class="rdot" style="background:${s.color}"></span>${s.name}`;
     lab.querySelector('input').addEventListener('change',render);
     box.appendChild(lab);
@@ -307,8 +337,11 @@ function buildRoasterFilters(){
 }
 function enabledRoasters(){ return new Set([...document.querySelectorAll('#roasterFilters input:checked')].map(i=>i.value)); }
 
+// Column (data-k) -> row field used for sorting. Sort state drives both the
+// clickable headers (desktop) and the mobile dropdown.
+const COLKEY={ image:'roaster', name:'name', variety:'variety', producer:'producer', origin:'origin', process:'process', size:'grams', price:'price', grams:'grams', pg:'pg', pg15:'pg' };
+let sortState={ col:'pg', dir:'asc' };
 function render(){
-  const sort=document.getElementById('sort').value;
   const hideR=document.getElementById('hideRested').checked;
   const geishaOnly=document.getElementById('geishaOnly').checked;
   const washedOnly=document.getElementById('washedOnly').checked;
@@ -332,10 +365,18 @@ function render(){
     for(const x of r){ const g=groups.get(x.key); const a=x.pg==null?-1:x.pg; if(!g || a>(g.pg==null?-1:g.pg)) groups.set(x.key,x); }
     r=[...groups.values()];
   }
-  const [k,dir]=sort.split('-'); const s=dir==='desc'?-1:1;
+  const k=COLKEY[sortState.col]||'pg'; const s=sortState.dir==='desc'?-1:1;
   r.sort((a,b)=>{ let av=a[k],bv=b[k];
     if(typeof av==='string'){av=av.toLowerCase();bv=bv.toLowerCase();return av<bv?-s:av>bv?s:0;}
     return ((av??1e9)-(bv??1e9))*s; });
+  // reflect sort on the headers (arrow + highlight) and keep the mobile dropdown in sync
+  document.querySelectorAll('th').forEach(th=>{
+    const active=th.dataset.k===sortState.col;
+    th.classList.toggle('sorted',active);
+    th.classList.toggle('desc',active && sortState.dir==='desc');
+  });
+  const sel=document.getElementById('sort');
+  if(sel){ const v=sortState.col+'|'+sortState.dir; if([...sel.options].some(o=>o.value===v)) sel.value=v; }
   tbody.innerHTML='';
   r.forEach(x=>{
     const tr=document.createElement('tr');
@@ -398,15 +439,17 @@ async function refresh(){
 
 // ============== Wiring ==============
 document.getElementById('refresh').addEventListener('click',refresh);
-document.getElementById('sort').addEventListener('change',render);
+document.getElementById('sort').addEventListener('change',e=>{ const [col,dir]=e.target.value.split('|'); sortState={col,dir}; render(); });
 document.getElementById('hideRested').addEventListener('change',render);
 document.getElementById('geishaOnly').addEventListener('change',render);
 document.getElementById('washedOnly').addEventListener('change',render);
 document.getElementById('perCoffee').addEventListener('change',render);
 document.getElementById('q').addEventListener('input',render);
 document.querySelectorAll('th').forEach(th=>th.addEventListener('click',()=>{
-  const map={name:'name-asc',variety:'variety-asc',producer:'name-asc',origin:'name-asc',process:'name-asc',size:'name-asc',price:'price-asc',grams:'pg-asc',pg:'pg-asc',pg15:'pg-asc',image:'roaster-asc'};
-  const m=map[th.dataset.k]; if(m){document.getElementById('sort').value=m;render();}
+  const col=th.dataset.k; if(!COLKEY[col]) return;
+  if(sortState.col===col) sortState.dir = sortState.dir==='asc'?'desc':'asc';   // same column -> flip direction
+  else sortState={col, dir:'asc'};                                              // new column -> ascending
+  render();
 }));
 
 // Keep the sticky table header offset just below the (variable-height) pinned top bar
