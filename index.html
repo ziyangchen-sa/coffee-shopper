@@ -18,11 +18,11 @@
   * { box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
   body { margin:0; font:15px/1.45 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif; color:var(--ink); background:var(--bg); }
   /* the whole block above the table stays pinned while scrolling */
-  #topbar { position:sticky; top:0; z-index:10; background:#fff; }
+  #topbar { position:sticky; top:0; z-index:11; background:#fff; }
   header { padding:max(20px,env(safe-area-inset-top)) 24px 14px; border-bottom:1px solid var(--line); background:#fff; }
   h1 { margin:0 0 4px; font-size:21px; letter-spacing:.3px; }
   .sub { color:var(--muted); font-size:13px; }
-  .controls { padding:12px 24px; display:flex; flex-direction:column; gap:10px; background:#fff; border-bottom:1px solid var(--line); }
+  .controls { position:sticky; top:var(--header-h, 0px); z-index:10; padding:12px 24px; display:flex; flex-direction:column; gap:10px; background:#fff; border-bottom:1px solid var(--line); }
   .row1 { display:flex; gap:12px; align-items:center; flex-wrap:wrap; }
   .row2 { display:flex; gap:8px; align-items:center; flex-wrap:wrap; }
   .spacer { flex:1; }
@@ -45,6 +45,7 @@
   .rdot { width:9px; height:9px; border-radius:50%; display:inline-block; }
   .rtoggle:not(:has(input:checked)) { opacity:.4; text-decoration:line-through; }
   .mobileSort { display:none; font-size:13px; color:var(--muted); align-items:center; gap:6px; }
+  #filtersToggle { display:none; }   /* desktop: filters always shown, no toggle needed */
   select, input[type=text] { font:inherit; padding:8px 10px; border:1px solid var(--line); border-radius:8px; background:#fff; }
   button#refresh { font:inherit; font-weight:600; padding:9px 16px; border:0; border-radius:9px; background:var(--accent); color:#fff; cursor:pointer; display:inline-flex; align-items:center; justify-content:center; gap:7px; }
   button#refresh:active { transform:scale(.98); }
@@ -57,7 +58,7 @@
   .wrap { padding:18px 24px 60px; }
   table { border-collapse:separate; border-spacing:0; width:100%; background:#fff; border-radius:10px; box-shadow:0 1px 3px rgba(0,0,0,.06); }
   th, td { padding:10px 12px; text-align:left; border-bottom:1px solid var(--line); vertical-align:middle; font-size:13.5px; }
-  th { background:#f3f0ea; font-size:12px; text-transform:uppercase; letter-spacing:.5px; color:#555; cursor:pointer; user-select:none; white-space:nowrap; position:sticky; top:var(--topbar-h, 0px); z-index:3; }
+  th { background:#f3f0ea; font-size:12px; text-transform:uppercase; letter-spacing:.5px; color:#555; cursor:pointer; user-select:none; white-space:nowrap; position:sticky; top:var(--stack-h, 0px); z-index:3; }
   th:hover { background:#ece6dc; color:#333; }
   th.sorted { color:var(--accent); background:#efe9f4; }
   th.sorted::after { content:"▲"; font-size:8px; margin-left:5px; vertical-align:middle; }
@@ -84,15 +85,29 @@
 
   /* ---------- Phone layout: each row becomes a card ---------- */
   @media (max-width:760px) {
-    header { padding-top:max(18px,env(safe-area-inset-top)); padding-left:16px; padding-right:16px; }
-    h1 { font-size:19px; }
-    .controls { padding:10px 16px; gap:10px; }
-    button#refresh { flex:1 1 100%; padding:12px; font-size:15px; }
-    #status { flex:1 1 100%; }
-    .search { flex:1 1 100%; }
-    .mobileSort { display:inline-flex; flex:1 1 100%; }   /* no clickable headers on mobile cards, so keep a sort control here */
-    .mobileSort select { flex:1; }
-    .row2 { gap:7px; }
+    /* Compact, collapsible top bar: title/explanation scroll away; only a slim
+       controls strip pins. Filters live behind a toggle to reclaim screen space. */
+    #topbar { position:static; }                              /* don't pin the title block */
+    header { padding:14px 16px 8px; }
+    h1 { font-size:18px; }
+    .sub { display:none; }                                    /* explanation hidden on mobile (also in footer) */
+    .controls { top:0; padding:8px 12px; gap:8px; box-shadow:0 2px 6px rgba(0,0,0,.06); }   /* override desktop --header-h offset; pin to viewport */
+    #status { display:none; }                                 /* verbose live-status text hidden; rowcount chip stays */
+    .row1 { gap:8px; }
+    .spacer { display:none; }                                 /* desktop push-right not needed; pack left */
+    button#refresh { flex:0 0 auto; padding:9px 12px; font-size:16px; }
+    .rlabel { display:none; }                                 /* refresh becomes an icon button */
+    .search { flex:1 1 140px; order:1; }
+    .mobileSort { display:inline-flex; order:2; }
+    .mobileSort select { max-width:46vw; }
+    #filtersToggle { display:inline-flex; order:3; align-items:center; gap:5px; font:inherit; font-weight:600;
+      padding:8px 13px; border:1px solid var(--line); border-radius:20px; background:#fff; color:#555; cursor:pointer; }
+    #filtersToggle[aria-expanded="true"] { background:var(--accent); color:#fff; border-color:var(--accent); }
+    .rowcount { order:4; }
+    /* the filter pills + roaster pills collapse behind the Filters toggle */
+    .row2 { display:none; gap:7px; width:100%; padding-top:8px; border-top:1px solid var(--line); }
+    .controls.filters-open .row2 { display:flex; }
+    .vsep { display:none; }
     .wrap { padding:12px 12px 50px; overflow-x:visible; }
     footer { padding:0 16px 40px; }
 
@@ -129,9 +144,10 @@
   <h1>☕ Coffee Shopper — Live Listings</h1>
   <div class="sub"><strong>$/g</strong> = price ÷ true coffee weight (lower is cheaper) — the comparable unit price <em>across roasters</em>. Tap <em>Refresh</em> to re-pull every catalog live.</div>
 </header>
+</div><!-- /topbar -->
 <div class="controls">
   <div class="row1">
-    <button id="refresh">🔄 Refresh all roasters</button>
+    <button id="refresh">🔄<span class="rlabel"> Refresh all roasters</span></button>
     <span id="status"></span>
     <span id="rowcount" class="rowcount"></span>
     <span class="spacer"></span>
@@ -150,6 +166,7 @@
       </select>
     </span>
     <input type="text" id="q" class="search" placeholder="🔍  Search name, farm, origin…">
+    <button id="filtersToggle" type="button" aria-expanded="false">Filters</button>
   </div>
   <div class="row2">
     <label class="toggle"><input type="checkbox" id="geishaOnly"> Geisha</label>
@@ -159,8 +176,7 @@
     <span class="vsep"></span>
     <div class="roasters" id="roasterFilters"><span class="lbl">Roasters</span></div>
   </div>
-</div>
-</div><!-- /topbar -->
+</div><!-- /controls -->
 <div class="wrap">
   <table id="t">
     <thead><tr>
@@ -415,6 +431,11 @@ function render(){
   const rc=document.getElementById('rowcount');
   if(rc){ const total=perCoffee?new Set(rows.map(x=>x.key)).size:rows.length;
     rc.textContent='Showing '+r.length+' of '+total+(perCoffee?' coffees':' rows'); }
+  // mobile "Filters" button shows how many filters are active so a collapsed panel still informs
+  const ft=document.getElementById('filtersToggle');
+  if(ft){ const allRoasters=document.querySelectorAll('#roasterFilters input').length;
+    const n=[geishaOnly,washedOnly,hideR].filter(Boolean).length + (allRoasters-roasters.size);
+    ft.textContent = n ? 'Filters · '+n : 'Filters'; }
   return r.length;
 }
 
@@ -435,7 +456,7 @@ const statusEl=document.getElementById('status');
 function setStatus(msg,cls){ statusEl.textContent=msg; statusEl.className=cls||''; }
 async function refresh(){
   const btn=document.getElementById('refresh');
-  btn.disabled=true; btn.innerHTML='<span class="spin"></span> Pulling all roasters…';
+  btn.disabled=true; btn.innerHTML='<span class="spin"></span><span class="rlabel"> Pulling all roasters…</span>';
   setStatus('Fetching '+SOURCES.length+' roasters…');
   // load the OCR'd B&W card notes (parseBW reads BWNOTES); ignore failure (falls back to char tags)
   try { BWNOTES = await (await fetch('bw-notes.json',{cache:'no-store'})).json(); } catch(e) { /* keep previous/empty */ }
@@ -454,7 +475,7 @@ async function refresh(){
   }else{
     setStatus('⚠ Could not reach any roaster. Showing last saved snapshot.','err');
   }
-  btn.disabled=false; btn.innerHTML='🔄 Refresh all roasters';
+  btn.disabled=false; btn.innerHTML='🔄<span class="rlabel"> Refresh all roasters</span>';
 }
 
 // ============== Wiring ==============
@@ -465,6 +486,10 @@ document.getElementById('geishaOnly').addEventListener('change',render);
 document.getElementById('washedOnly').addEventListener('change',render);
 document.getElementById('perCoffee').addEventListener('change',render);
 document.getElementById('q').addEventListener('input',render);
+document.getElementById('filtersToggle').addEventListener('click',function(){
+  const c=document.querySelector('.controls'); const open=c.classList.toggle('filters-open');
+  this.setAttribute('aria-expanded', open?'true':'false');
+});
 document.querySelectorAll('th').forEach(th=>th.addEventListener('click',()=>{
   const col=th.dataset.k; if(!COLKEY[col]) return;
   if(sortState.col===col) sortState.dir = sortState.dir==='asc'?'desc':'asc';   // same column -> flip direction
@@ -473,10 +498,19 @@ document.querySelectorAll('th').forEach(th=>th.addEventListener('click',()=>{
 }));
 
 // Keep the sticky table header offset just below the (variable-height) pinned top bar
+// Header (title) and controls are now stacked sticky elements. Keep their
+// heights as CSS vars: controls sit below the header, the table header below both.
 const topbarEl=document.getElementById('topbar');
-function setTopbarOffset(){ document.documentElement.style.setProperty('--topbar-h',(topbarEl?topbarEl.offsetHeight:0)+'px'); }
-if(window.ResizeObserver){ new ResizeObserver(setTopbarOffset).observe(topbarEl); } else { window.addEventListener('resize',setTopbarOffset); }
-setTopbarOffset();
+const controlsEl=document.querySelector('.controls');
+function setOffsets(){
+  const h=topbarEl?topbarEl.offsetHeight:0, c=controlsEl?controlsEl.offsetHeight:0;
+  const root=document.documentElement.style;
+  root.setProperty('--header-h', h+'px');
+  root.setProperty('--stack-h', (h+c)+'px');
+}
+if(window.ResizeObserver){ const ro=new ResizeObserver(setOffsets); ro.observe(topbarEl); ro.observe(controlsEl); }
+else { window.addEventListener('resize',setOffsets); }
+setOffsets();
 
 rebuild(); render();
 setStatus(DATA.length?'Showing saved snapshot. Refreshing…':'Loading live…');
